@@ -163,15 +163,6 @@ define([
                 }
             },
 
-            ///////////////////////////////////////////////////
-            //// Utility methods
-
-            /*
-
-                Here, you can defines some utility methods that you can use everywhere in your javascript
-                script.
-
-            */
             // Get card unique identifier based on its color and value
             getCardUniqueId: function (color, value) {
                 return (color - 1) * 13 + (value - 2);
@@ -204,18 +195,6 @@ define([
                 this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
             },
 
-            // /////////////////////////////////////////////////
-            // // Player's action
-
-            /*
-             *
-             * Here, you are defining methods to handle player's action (ex: results of mouse click on game objects).
-             *
-             * Most of the time, these methods: _ check the action is possible at this game state. _ make a call to the game server
-             *
-             */
-
-
             onPlayerHandSelectionChanged: function () {
                 var items = this.playerHand.getSelectedItems();
 
@@ -240,80 +219,16 @@ define([
                 }
             },
 
-            /*
-             * Example:
-             *
-             * onMyMethodToCall1: function( evt ) { console.log( 'onMyMethodToCall1' );
-             *  // Preventing default browser reaction dojo.stopEvent( evt );
-             *  // Check that this action is possible (see "possibleactions" in states.inc.php) if( ! this.checkAction( 'myAction' ) ) { return; }
-             *
-             * this.ajaxcall( "/milito/milito/myAction.html", { lock: true, myArgument1: arg1, myArgument2: arg2, ... }, this, function(
-             * result ) {
-             *  // What to do after the server call if it succeeded // (most of the time: nothing)
-             *  }, function( is_error) {
-             *  // What to do after the server call in anyway (success or failure) // (most of the time: nothing)
-             *  } ); },
-             *
-             */
-
-
-            ///////////////////////////////////////////////////
-            //// Reaction to cometD notifications
-
-            /*
-                setupNotifications:
-
-                In this method, you associate each of your game notifications with your local method to handle it.
-
-                Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
-                      your milito.game.php file.
-
-            */
-
-            // TODO: from this point and below, you can write your game notifications handling methods
-
-            /*
-            Example:
-
-
-
-            notif_cardPlayed: function( notif )
-            {
-                console.log( 'notif_cardPlayed' );
-                console.log( notif );
-
-                // Note: notif.args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-
-                // TODO: play the card in the user interface.
-            },
-
-            */
-
             setupNotifications: function () {
                 console.log('notifications subscriptions setup');
 
                 dojo.subscribe('newHand', this, "notif_newHand");
                 dojo.subscribe('playCard', this, "notif_playCard");
-                dojo.subscribe( 'trickWin', this, "notif_trickWin" );
-                this.notifqueue.setSynchronous( 'trickWin', 1000 );
-                dojo.subscribe( 'giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer" );
-                dojo.subscribe( 'newScores', this, "notif_newScores" );
 
-            },
-
-            notif_trickWin : function(notif) {
-                // We do nothing here (just wait in order players can view the 4 cards played before they're gone.
-            },
-            notif_giveAllCardsToPlayer : function(notif) {
-                // Move all cards on table to given table, then destroy them
-                var winner_id = notif.args.player_id;
-                for ( var player_id in this.gamedatas.players) {
-                    var anim = this.slideToObject('cardontable_' + player_id, 'overall_player_board_' + winner_id);
-                    dojo.connect(anim, 'onEnd', function(node) {
-                        dojo.destroy(node);
-                    });
-                    anim.play();
-                }
+                dojo.subscribe('trickWin', this, "notif_trickWin");
+                this.notifqueue.setSynchronous('trickWin', 1000);
+                dojo.subscribe('giveAllCardsToPlayer', this, "notif_giveAllCardsToPlayer");
+                dojo.subscribe('newScores', this, "notif_newScores");
             },
 
             notif_newHand: function (notif) {
@@ -331,6 +246,29 @@ define([
             notif_playCard: function (notif) {
                 // Play a card on the table
                 this.playCardOnTable(notif.args.player_id, notif.args.color, notif.args.value, notif.args.card_id);
+            },
+
+            notif_trickWin: function (notif) {
+                // We do nothing here (just wait in order players can view the 4 cards played before they're gone.
+            },
+
+            notif_giveAllCardsToPlayer: function (notif) {
+                // Move all cards on table to given table, then destroy them
+                var winner_id = notif.args.player_id;
+                for (var player_id in this.gamedatas.players) {
+                    var anim = this.slideToObject('cardontable_' + player_id, 'overall_player_board_' + winner_id);
+                    dojo.connect(anim, 'onEnd', function (node) {
+                        dojo.destroy(node);
+                    });
+                    anim.play();
+                }
+            },
+
+            notif_newScores: function (notif) {
+                // Update players' scores
+                for (var player_id in notif.args.newScores) {
+                    this.scoreCtrl[player_id].toValue(notif.args.newScores[player_id]);
+                }
             },
         });
     });
