@@ -8,7 +8,7 @@
   * See http://en.boardgamearena.com/#!doc/Studio for more information.
   * -----
   * 
-  * heartsla.game.php
+  * milito.game.php
   *
   * This is the main file for your game logic.
   *
@@ -20,7 +20,7 @@
 require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
 
 
-class Heartsla extends Table {
+class milito extends Table {
 
     function __construct() {
             
@@ -48,7 +48,7 @@ class Heartsla extends Table {
     protected function getGameName( )
     {
         // Used for translations and stuff. Please do not modify.
-        return "heartsla";
+        return "milito";
     }   
 
     /*

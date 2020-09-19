@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * Milito implementation : © <Your name here> <Your email address here>
+ * template implementation : © <Your name here> <Your email address here>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -9,7 +9,7 @@
  *
  * milito.js
  *
- * Milito user interface script
+ * template user interface script
  * 
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
@@ -19,20 +19,15 @@ define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
     "ebg/counter",
-    "ebg/stock",
+    "ebg/stock"
 ],
 function (dojo, declare) {
     return declare("bgagame.milito", ebg.core.gamegui, {
         constructor: function(){
-            console.log('milito constructor');
-
+            console.log('hearts constructor');
+              
             this.cardwidth = 72;
             this.cardheight = 96;
-
-            // Here, you can init the global variables of your user interface
-            // Example:
-            // this.myGlobalValue = 0;
-
         },
         
         /*
@@ -48,25 +43,16 @@ function (dojo, declare) {
             "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
         */
         
-        setup: function( gamedatas )
-        {
-            console.log( "Starting game setup" );
-            
-            // Setting up player boards
-            for( var player_id in gamedatas.players )
-            {
-                var player = gamedatas.players[player_id];
-                         
-                // TODO: Setting up players boards if needed
-            }
-            
-            // TODO: Set up your game interface here, according to "gamedatas"
 
+        setup : function(gamedatas) {
+            console.log("Starting game setup");
+           
             // Player hand
-            this.playerHand = new ebg.stock(); // new stock object for hand
-            this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );            
+            this.playerHand = new ebg.stock();
+            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            this.playerHand.image_items_per_row = 13;
 
-            this.playerHand.image_items_per_row = 13; // 13 images per row
+            dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
             // Create cards types:
             for (var color = 1; color <= 4; color++) {
@@ -76,7 +62,7 @@ function (dojo, declare) {
                     this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cards.jpg', card_type_id);
                 }
             }
- 
+            
 
             // Cards in player's hand
             for ( var i in this.gamedatas.hand) {
@@ -94,9 +80,7 @@ function (dojo, declare) {
                 var player_id = card.location_arg;
                 this.playCardOnTable(player_id, color, value, card.id);
             }
-
-            dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
-
+            
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
@@ -195,11 +179,11 @@ function (dojo, declare) {
             script.
         
         */
-
         // Get card unique identifier based on its color and value
         getCardUniqueId : function(color, value) {
             return (color - 1) * 13 + (value - 2);
         },
+        
 
         playCardOnTable : function(player_id, color, value, card_id) {
             // player_id => direction
@@ -227,20 +211,17 @@ function (dojo, declare) {
             this.slideToObject('cardontable_' + player_id, 'playertablecard_' + player_id).play();
         },
 
-
-        ///////////////////////////////////////////////////
-        //// Player's action
+        // /////////////////////////////////////////////////
+        // // Player's action
         
         /*
+         * 
+         * Here, you are defining methods to handle player's action (ex: results of mouse click on game objects).
+         * 
+         * Most of the time, these methods: _ check the action is possible at this game state. _ make a call to the game server
+         * 
+         */
         
-            Here, you are defining methods to handle player's action (ex: results of mouse click on 
-            game objects).
-            
-            Most of the time, these methods:
-            _ check the action is possible at this game state.
-            _ make a call to the game server
-        
-        */
 
         onPlayerHandSelectionChanged : function() {
             var items = this.playerHand.getSelectedItems();
@@ -250,6 +231,7 @@ function (dojo, declare) {
                     // Can play a card
 
                     var card_id = items[0].id;
+
                     console.log("on playCard "+card_id);
                     // type is (color - 1) * 13 + (value - 2)
                     var type = items[0].type;
@@ -258,6 +240,7 @@ function (dojo, declare) {
                     
                     this.playCardOnTable(this.player_id,color,value,card_id);
                     
+           
                     this.playerHand.unselectAll();
                 } else if (this.checkAction('giveCards')) {
                     // Can give cards => let the player select some cards
@@ -267,39 +250,21 @@ function (dojo, declare) {
             }
         },
         
-        /* Example:
-        
-        onMyMethodToCall1: function( evt )
-        {
-            console.log( 'onMyMethodToCall1' );
-            
-            // Preventing default browser reaction
-            dojo.stopEvent( evt );
-
-            // Check that this action is possible (see "possibleactions" in states.inc.php)
-            if( ! this.checkAction( 'myAction' ) )
-            {   return; }
-
-            this.ajaxcall( "/milito/milito/myAction.html", { 
-                                                                    lock: true, 
-                                                                    myArgument1: arg1, 
-                                                                    myArgument2: arg2,
-                                                                    ...
-                                                                 }, 
-                         this, function( result ) {
-                            
-                            // What to do after the server call if it succeeded
-                            // (most of the time: nothing)
-                            
-                         }, function( is_error) {
-
-                            // What to do after the server call in anyway (success or failure)
-                            // (most of the time: nothing)
-
-                         } );        
-        },        
-        
-        */
+        /*
+         * Example:
+         * 
+         * onMyMethodToCall1: function( evt ) { console.log( 'onMyMethodToCall1' );
+         *  // Preventing default browser reaction dojo.stopEvent( evt );
+         *  // Check that this action is possible (see "possibleactions" in states.inc.php) if( ! this.checkAction( 'myAction' ) ) { return; }
+         * 
+         * this.ajaxcall( "/milito/milito/myAction.html", { lock: true, myArgument1: arg1, myArgument2: arg2, ... }, this, function(
+         * result ) {
+         *  // What to do after the server call if it succeeded // (most of the time: nothing)
+         *  }, function( is_error) {
+         *  // What to do after the server call in anyway (success or failure) // (most of the time: nothing)
+         *  } ); },
+         * 
+         */
 
         
         ///////////////////////////////////////////////////
@@ -311,7 +276,7 @@ function (dojo, declare) {
             In this method, you associate each of your game notifications with your local method to handle it.
             
             Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
-                  your milito.game.php file.
+                  your template.game.php file.
         
         */
         setupNotifications: function()
