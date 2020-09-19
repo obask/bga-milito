@@ -2,13 +2,13 @@
  /**
   *------
   * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
-  * Milito implementation : © <Your name here> <Your email address here>
+  * template implementation : © <Your name here> <Your email address here>
   * 
   * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
   * See http://en.boardgamearena.com/#!doc/Studio for more information.
   * -----
   * 
-  * milito.game.php
+  * heartsla.game.php
   *
   * This is the main file for your game logic.
   *
@@ -20,33 +20,36 @@
 require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
 
 
-class Milito extends Table
-{
-	function __construct( )
-	{
+class Heartsla extends Table {
+
+    function __construct() {
+            
+ 
         // Your global variables labels:
         //  Here, you can assign labels to global variables you are using for this game.
         //  You can use any number of global variables with IDs between 10 and 99.
         //  If your game has options (variants), you also have to associate here a label to
         //  the corresponding ID in gameoptions.inc.php.
         // Note: afterwards, you can get/set the global variables with getGameStateValue/setGameStateInitialValue/setGameStateValue
-        parent::__construct();
         
-        self::initGameStateLabels( array( 
-            //    "my_first_global_variable" => 10,
-            //    "my_second_global_variable" => 11,
-            //      ...
-            //    "my_first_game_variant" => 100,
-            //    "my_second_game_variant" => 101,
-            //      ...
-        ) );        
-	}
-	
+        parent::__construct();
+        self::initGameStateLabels( array(
+                "currentHandType" => 10,
+                "trickColor" => 11,
+                "alreadyPlayedHearts" => 12,
+                //      ...
+                //    "my_first_game_variant" => 100,
+        ) );
+        
+        $this->cards = self::getNew( "module.common.deck" );
+        $this->cards->init( "card" );        
+    }
+    
     protected function getGameName( )
     {
-		// Used for translations and stuff. Please do not modify.
-        return "milito";
-    }	
+        // Used for translations and stuff. Please do not modify.
+        return "heartsla";
+    }   
 
     /*
         setupNewGame:
@@ -60,8 +63,7 @@ class Milito extends Table
         // Set the colors of the players with HTML color code
         // The default below is red/green/blue/orange/brown
         // The number of colors defined here must correspond to the maximum number of players allowed for the gams
-        $gameinfos = self::getGameinfos();
-        $default_colors = $gameinfos['player_colors'];
+        $default_colors = array( "ff0000", "008000", "0000ff", "ffa500", "773300" );
  
         // Create players
         // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
@@ -74,24 +76,52 @@ class Milito extends Table
         }
         $sql .= implode( $values, ',' );
         self::DbQuery( $sql );
-        self::reattributeColorsBasedOnPreferences( $players, $gameinfos['player_colors'] );
+        self::reattributeColorsBasedOnPreferences( $players, array(  "ff0000", "008000", "0000ff", "ffa500", "773300" ) );
         self::reloadPlayersBasicInfos();
         
         /************ Start the game initialization *****/
 
         // Init global values with their initial values
-        //self::setGameStateInitialValue( 'my_first_global_variable', 0 );
+        
+        // Note: hand types: 0 = give 3 cards to player on the left
+        //                   1 = give 3 cards to player on the right
+        //                   2 = give 3 cards to player on tthe front
+        //                   3 = keep cards
+        self::setGameStateInitialValue( 'currentHandType', 0 );
+        
+        // Set current trick color to zero (= no trick color)
+        self::setGameStateInitialValue( 'trickColor', 0 );
+        
+        // Mark if we already played some heart during this hand
+        self::setGameStateInitialValue( 'alreadyPlayedHearts', 0 );
         
         // Init game statistics
-        // (note: statistics used in this file must be defined in your stats.inc.php file)
-        //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
-        //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
+        // (note: statistics are defined in your stats.inc.php file)
 
-        // TODO: setup the initial game situation here
+        // Create cards
+        $cards = array ();
+        foreach ( $this->colors as $color_id => $color ) {
+            // spade, heart, diamond, club
+            for ($value = 2; $value <= 14; $value ++) {
+                //  2, 3, 4, ... K, A
+                $cards [] = array ('type' => $color_id,'type_arg' => $value,'nbr' => 1 );
+            }
+        }
+        
+        $this->cards->createCards( $cards, 'deck' );
        
+        
+        // Shuffle deck
+        $this->cards->shuffle('deck');
+        // Deal 13 cards to each players
+        $players = self::loadPlayersBasicInfos();
+        foreach ( $players as $player_id => $player ) {
+            $cards = $this->cards->pickCards(13, 'deck', $player_id);
+        } 
 
         // Activate first player (which is in general a good idea :) )
         $this->activeNextPlayer();
+
 
         /************ End of the game initialization *****/
     }
@@ -107,7 +137,7 @@ class Milito extends Table
     */
     protected function getAllDatas()
     {
-        $result = array();
+        $result = array( 'players' => array() );
     
         $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
     
@@ -116,7 +146,11 @@ class Milito extends Table
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result['players'] = self::getCollectionFromDb( $sql );
   
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
+        // Cards in player hand
+        $result['hand'] = $this->cards->getCardsInLocation( 'hand', $current_player_id );
+        
+        // Cards played on the table
+        $result['cardsontable'] = $this->cards->getCardsInLocation( 'cardsontable' );
   
         return $result;
     }
@@ -155,7 +189,7 @@ class Milito extends Table
 
     /*
         Each time a player is doing some game action, one of the methods below is called.
-        (note: each method below must match an input method in milito.action.php)
+        (note: each method below must match an input method in template.action.php)
     */
 
     /*
@@ -173,7 +207,7 @@ class Milito extends Table
         ...
         
         // Notify all players about the card played
-        self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} plays ${card_name}' ), array(
+        self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} played ${card_name}' ), array(
             'player_id' => $player_id,
             'player_name' => self::getActivePlayerName(),
             'card_name' => $card_name,
@@ -244,31 +278,32 @@ class Milito extends Table
         This method is called each time it is the turn of a player who has quit the game (= "zombie" player).
         You can do whatever you want in order to make sure the turn of this player ends appropriately
         (ex: pass).
-        
-        Important: your zombie code will be called when the player leaves the game. This action is triggered
-        from the main site and propagated to the gameserver from a server, not from a browser.
-        As a consequence, there is no current player associated to this action. In your zombieTurn function,
-        you must _never_ use getCurrentPlayerId() or getCurrentPlayerName(), otherwise it will fail with a "Not logged" error message. 
     */
 
     function zombieTurn( $state, $active_player )
     {
-    	$statename = $state['name'];
-    	
-        if ($state['type'] === "activeplayer") {
+        $statename = $state['name'];
+        
+        if ($state['type'] == "activeplayer") {
             switch ($statename) {
                 default:
                     $this->gamestate->nextState( "zombiePass" );
-                	break;
+                    break;
             }
 
             return;
         }
 
-        if ($state['type'] === "multipleactiveplayer") {
+        if ($state['type'] == "multipleactiveplayer") {
             // Make sure player is in a non blocking status for role turn
-            $this->gamestate->setPlayerNonMultiactive( $active_player, '' );
-            
+            $sql = "
+                UPDATE  player
+                SET     player_is_multiactive = 0
+                WHERE   player_id = $active_player
+            ";
+            self::DbQuery( $sql );
+
+            $this->gamestate->updateMultiactiveOrNextState( '' );
             return;
         }
 
@@ -299,17 +334,13 @@ class Milito extends Table
         // Example:
 //        if( $from_version <= 1404301345 )
 //        {
-//            // ! important ! Use DBPREFIX_<table_name> for all tables
-//
-//            $sql = "ALTER TABLE DBPREFIX_xxxxxxx ....";
-//            self::applyDbUpgradeToAllDB( $sql );
+//            $sql = "ALTER TABLE xxxxxxx ....";
+//            self::DbQuery( $sql );
 //        }
 //        if( $from_version <= 1405061421 )
 //        {
-//            // ! important ! Use DBPREFIX_<table_name> for all tables
-//
-//            $sql = "CREATE TABLE DBPREFIX_xxxxxxx ....";
-//            self::applyDbUpgradeToAllDB( $sql );
+//            $sql = "CREATE TABLE xxxxxxx ....";
+//            self::DbQuery( $sql );
 //        }
 //        // Please add your future database scheme changes here
 //
