@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * template implementation : © <Your name here> <Your email address here>
+ * Milito implementation : © <Your name here> <Your email address here>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -9,7 +9,7 @@
  *
  * milito.js
  *
- * template user interface script
+ * Milito user interface script
  * 
  * In this file, you are describing the logic of your user interface, in Javascript language.
  *
@@ -24,7 +24,7 @@ define([
 function (dojo, declare) {
     return declare("bgagame.milito", ebg.core.gamegui, {
         constructor: function(){
-            console.log('hearts constructor');
+            console.log('Milito constructor');
               
             this.cardwidth = 72;
             this.cardheight = 96;
@@ -276,7 +276,7 @@ function (dojo, declare) {
             In this method, you associate each of your game notifications with your local method to handle it.
             
             Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
-                  your template.game.php file.
+                  your milito.game.php file.
         
         */
         setupNotifications: function()
