@@ -42,8 +42,6 @@
            Consequently, don't hesitate to put as many comments as necessary.
 */
 
-@import url(../../../css/csslayer.css); /* Note: you must not use any @import directive other than this one */
-
 /********* You can start writing your CSS below this line: **********/
 /** Table layout **/
 
@@ -69,16 +67,19 @@
     top: 0px;
     margin-left: -90px; /* half of 180 */
 }
+
 .playertable_S {
     left: 50%;
     bottom: 0px;
     margin-left: -90px; /* half of 180 */
 }
+
 .playertable_W {
     left: 0px;
     top: 50%;
     margin-top: -55px; /* half of 130 */
 }
+
 .playertable_E {
     right: 0px;
     top: 50%;
@@ -99,6 +100,6 @@
     position: absolute;
     width: 72px;
     height: 96px;
-    background-image: url('img/cards.jpg'); 
+    background-image: url('img/cards.jpg');
 }
 
