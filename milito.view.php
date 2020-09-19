@@ -60,5 +60,3 @@ class view_milito_milito extends game_view
         return "milito";
     }
 }
-  
-
