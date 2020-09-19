@@ -93,13 +93,14 @@ class Milito extends Table
     }
 
     /*
-        getAllDatas: 
-        
-        Gather all informations about current game situation (visible by the current player).
-        
-        The method is called each time the game interface is displayed to a player, ie:
-        _ when the game starts
-        _ when a player refreshes the game page (F5)
+        upgradeTableDb:
+
+        You don't have to care about this until your game has been published on BGA.
+        Once your game is on BGA, this method is called everytime the system detects a game running with your old
+        Database scheme.
+        In this case, if you change your Database scheme, you just have to apply the needed changes in order to
+        update the game database and allow the game to continue to run with your new version.
+
     */
 
     function upgradeTableDb($from_version)
@@ -322,14 +323,13 @@ class Milito extends Table
 //////////
 
     /*
-        upgradeTableDb:
-        
-        You don't have to care about this until your game has been published on BGA.
-        Once your game is on BGA, this method is called everytime the system detects a game running with your old
-        Database scheme.
-        In this case, if you change your Database scheme, you just have to apply the needed changes in order to
-        update the game database and allow the game to continue to run with your new version.
-    
+        getAllDatas:
+
+        Gather all informations about current game situation (visible by the current player).
+
+        The method is called each time the game interface is displayed to a player, ie:
+        _ when the game starts
+        _ when a player refreshes the game page (F5)
     */
 
     protected function getAllDatas()
@@ -351,4 +351,108 @@ class Milito extends Table
 
         return $result;
     }
+
+    function stNewHand()
+    {
+        // Take back all cards (from any location => null) to deck
+        $this->cards->moveAllCardsInLocation(null, "deck");
+        $this->cards->shuffle('deck');
+        // Deal 13 cards to each players
+        // Create deck, shuffle it and give 13 initial cards
+        $players = self::loadPlayersBasicInfos();
+        foreach ($players as $player_id => $player) {
+            $cards = $this->cards->pickCards(13, 'deck', $player_id);
+            // Notify player about his cards
+            self::notifyPlayer($player_id, 'newHand', '', array('cards' => $cards));
+        }
+        self::setGameStateValue('alreadyPlayedHearts', 0);
+        $this->gamestate->nextState("");
+    }
+
+    function stNewTrick()
+    {
+        // New trick: active the player who wins the last trick, or the player who own the club-2 card
+        // Reset trick color to 0 (= no color)
+        self::setGameStateInitialValue('trickColor', 0);
+        $this->gamestate->nextState();
+    }
+
+    function stNextPlayer() {
+        // Active next player OR end the trick and go to the next trick OR end the hand
+        if ($this->cards->countCardInLocation('cardsontable') == 4) {
+            // This is the end of the trick
+            $cards_on_table = $this->cards->getCardsInLocation('cardsontable');
+            $best_value = 0;
+            $best_value_player_id = null;
+            $currentTrickColor = self::getGameStateValue('trickColor');
+            foreach ( $cards_on_table as $card ) {
+                // Note: type = card color
+                if ($card ['type'] == $currentTrickColor) {
+                    if ($best_value_player_id === null || $card ['type_arg'] > $best_value) {
+                        $best_value_player_id = $card ['location_arg']; // Note: location_arg = player who played this card on table
+                        $best_value = $card ['type_arg']; // Note: type_arg = value of the card
+                    }
+                }
+            }
+
+            // Active this player => he's the one who starts the next trick
+            $this->gamestate->changeActivePlayer( $best_value_player_id );
+
+            // Move all cards to "cardswon" of the given player
+            $this->cards->moveAllCardsInLocation('cardsontable', 'cardswon', null, $best_value_player_id);
+
+            $players = self::loadPlayersBasicInfos();
+            self::notifyAllPlayers('trickWin', clienttranslate('${player_name} wins the trick'), array(
+                'player_id' => $best_value_player_id,
+                'player_name' => $players[$best_value_player_id]['player_name']
+            ));
+            self::notifyAllPlayers('giveAllCardsToPlayer', '', array(
+                'player_id' => $best_value_player_id
+            ));
+
+            if ($this->cards->countCardInLocation('hand') == 0) {
+                // End of the hand
+                $this->gamestate->nextState("endHand");
+            } else {
+                // End of the trick
+                $this->gamestate->nextState("nextTrick");
+            }
+        } else {
+            // Standard case (not the end of the trick)
+            // => just active the next player
+            $player_id = self::activeNextPlayer();
+            self::giveExtraTime($player_id);
+            $this->gamestate->nextState('nextPlayer');
+        }
+    }
+
+    function stEndHand()
+    {
+        $this->gamestate->nextState("nextHand");
+    }
+
+    function playCard($card_id)
+    {
+        self::checkAction("playCard");
+        $player_id = self::getActivePlayerId();
+        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
+        // XXX check rules here
+        $currentCard = $this->cards->getCard($card_id);
+        // And notify
+
+        $currentTrickColor = self::getGameStateValue('trickColor');
+        if ($currentTrickColor == 0) {
+            self::setGameStateValue('trickColor', $currentCard['type']);
+        }
+
+        self::notifyAllPlayers('playCard', clienttranslate('${player_name} plays ${value_displayed} ${color_displayed}'), array(
+            'i18n' => array('color_displayed', 'value_displayed'), 'card_id' => $card_id, 'player_id' => $player_id,
+            'player_name' => self::getActivePlayerName(), 'value' => $currentCard ['type_arg'],
+            'value_displayed' => $this->values_label [$currentCard ['type_arg']], 'color' => $currentCard ['type'],
+            'color_displayed' => $this->colors [$currentCard ['type']] ['name']));
+        // Next player
+        $this->gamestate->nextState('playCard');
+    }
+
+
 }
