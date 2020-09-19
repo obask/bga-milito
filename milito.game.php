@@ -1,55 +1,58 @@
 <?php
- /**
-  *------
-  * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
-  * Milito implementation : © <Your name here> <Your email address here>
-  * 
-  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
-  * See http://en.boardgamearena.com/#!doc/Studio for more information.
-  * -----
-  * 
-  * milito.game.php
-  *
-  * This is the main file for your game logic.
-  *
-  * In this PHP file, you are going to defines the rules of the game.
-  *
-  */
+/**
+ *------
+ * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
+ * Milito implementation : © <Your name here> <Your email address here>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ *
+ * milito.game.php
+ *
+ * This is the main file for your game logic.
+ *
+ * In this PHP file, you are going to defines the rules of the game.
+ *
+ */
 
 
-require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
+require_once(APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 
 
-class Milito extends Table {
+class Milito extends Table
+{
 
-    function __construct() {
-            
- 
+    function __construct()
+    {
+
+
         // Your global variables labels:
         //  Here, you can assign labels to global variables you are using for this game.
         //  You can use any number of global variables with IDs between 10 and 99.
         //  If your game has options (variants), you also have to associate here a label to
         //  the corresponding ID in gameoptions.inc.php.
         // Note: afterwards, you can get/set the global variables with getGameStateValue/setGameStateInitialValue/setGameStateValue
-        
+
         parent::__construct();
-        self::initGameStateLabels( array(
-                "currentHandType" => 10,
-                "trickColor" => 11,
-                "alreadyPlayedHearts" => 12,
-                //      ...
-                //    "my_first_game_variant" => 100,
-        ) );
-        
-        $this->cards = self::getNew( "module.common.deck" );
-        $this->cards->init( "card" );        
+        self::initGameStateLabels(array(
+            "currentHandType" => 10,
+            "trickColor" => 11,
+            "alreadyPlayedHearts" => 12,
+            //      ...
+            //    "my_first_game_variant" => 100,
+        ));
+
+        $this->cards = self::getNew("module.common.deck");
+        $this->cards->init("card");
     }
-    
-    protected function getGameName( )
+
+    function getGameProgression()
     {
-        // Used for translations and stuff. Please do not modify.
-        return "milito";
-    }   
+        // TODO: compute and return the game progression
+
+        return 0;
+    }
 
     /*
         setupNewGame:
@@ -58,72 +61,35 @@ class Milito extends Table {
         In this method, you must setup the game according to the game rules, so that
         the game is ready to be played.
     */
-    protected function setupNewGame( $players, $options = array() )
-    {    
-        // Set the colors of the players with HTML color code
-        // The default below is red/green/blue/orange/brown
-        // The number of colors defined here must correspond to the maximum number of players allowed for the gams
-        $default_colors = array( "ff0000", "008000", "0000ff", "ffa500", "773300" );
- 
-        // Create players
-        // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
-        $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
-        $values = array();
-        foreach( $players as $player_id => $player )
-        {
-            $color = array_shift( $default_colors );
-            $values[] = "('".$player_id."','$color','".$player['player_canal']."','".addslashes( $player['player_name'] )."','".addslashes( $player['player_avatar'] )."')";
-        }
-        $sql .= implode( $values, ',' );
-        self::DbQuery( $sql );
-        self::reattributeColorsBasedOnPreferences( $players, array(  "ff0000", "008000", "0000ff", "ffa500", "773300" ) );
-        self::reloadPlayersBasicInfos();
-        
-        /************ Start the game initialization *****/
 
-        // Init global values with their initial values
-        
-        // Note: hand types: 0 = give 3 cards to player on the left
-        //                   1 = give 3 cards to player on the right
-        //                   2 = give 3 cards to player on tthe front
-        //                   3 = keep cards
-        self::setGameStateInitialValue( 'currentHandType', 0 );
-        
-        // Set current trick color to zero (= no trick color)
-        self::setGameStateInitialValue( 'trickColor', 0 );
-        
-        // Mark if we already played some heart during this hand
-        self::setGameStateInitialValue( 'alreadyPlayedHearts', 0 );
-        
-        // Init game statistics
-        // (note: statistics are defined in your stats.inc.php file)
+    function zombieTurn($state, $active_player)
+    {
+        $statename = $state['name'];
 
-        // Create cards
-        $cards = array ();
-        foreach ( $this->colors as $color_id => $color ) {
-            // spade, heart, diamond, club
-            for ($value = 2; $value <= 14; $value ++) {
-                //  2, 3, 4, ... K, A
-                $cards [] = array ('type' => $color_id,'type_arg' => $value,'nbr' => 1 );
+        if ($state['type'] == "activeplayer") {
+            switch ($statename) {
+                default:
+                    $this->gamestate->nextState("zombiePass");
+                    break;
             }
+
+            return;
         }
-        
-        $this->cards->createCards( $cards, 'deck' );
-       
-        
-        // Shuffle deck
-        $this->cards->shuffle('deck');
-        // Deal 13 cards to each players
-        $players = self::loadPlayersBasicInfos();
-        foreach ( $players as $player_id => $player ) {
-            $cards = $this->cards->pickCards(13, 'deck', $player_id);
-        } 
 
-        // Activate first player (which is in general a good idea :) )
-        $this->activeNextPlayer();
+        if ($state['type'] == "multipleactiveplayer") {
+            // Make sure player is in a non blocking status for role turn
+            $sql = "
+                UPDATE  player
+                SET     player_is_multiactive = 0
+                WHERE   player_id = $active_player
+            ";
+            self::DbQuery($sql);
 
+            $this->gamestate->updateMultiactiveOrNextState('');
+            return;
+        }
 
-        /************ End of the game initialization *****/
+        throw new feException("Zombie mode not supported at this game state: " . $statename);
     }
 
     /*
@@ -135,24 +101,29 @@ class Milito extends Table {
         _ when the game starts
         _ when a player refreshes the game page (F5)
     */
-    protected function getAllDatas()
+
+    function upgradeTableDb($from_version)
     {
-        $result = array( 'players' => array() );
-    
-        $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
-    
-        // Get information about players
-        // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
-        $sql = "SELECT player_id id, player_score score FROM player ";
-        $result['players'] = self::getCollectionFromDb( $sql );
-  
-        // Cards in player hand
-        $result['hand'] = $this->cards->getCardsInLocation( 'hand', $current_player_id );
-        
-        // Cards played on the table
-        $result['cardsontable'] = $this->cards->getCardsInLocation( 'cardsontable' );
-  
-        return $result;
+        // $from_version is the current version of this game database, in numerical form.
+        // For example, if the game was running with a release of your game named "140430-1345",
+        // $from_version is equal to 1404301345
+
+        // Example:
+//        if( $from_version <= 1404301345 )
+//        {
+//            $sql = "ALTER TABLE xxxxxxx ....";
+//            self::DbQuery( $sql );
+//        }
+//        if( $from_version <= 1405061421 )
+//        {
+//            $sql = "CREATE TABLE xxxxxxx ....";
+//            self::DbQuery( $sql );
+//        }
+//        // Please add your future database scheme changes here
+//
+//
+
+
     }
 
     /*
@@ -165,11 +136,11 @@ class Milito extends Table {
         This method is called each time we are in a game state with the "updateGameProgression" property set to true 
         (see states.inc.php)
     */
-    function getGameProgression()
-    {
-        // TODO: compute and return the game progression
 
-        return 0;
+    protected function getGameName()
+    {
+        // Used for translations and stuff. Please do not modify.
+        return "milito";
     }
 
 
@@ -180,7 +151,6 @@ class Milito extends Table {
     /*
         In this space, you can put any utility methods useful for your game logic
     */
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -218,7 +188,7 @@ class Milito extends Table {
     
     */
 
-    
+
 //////////////////////////////////////////////////////////////////////////////
 //////////// Game state arguments
 ////////////
@@ -254,7 +224,7 @@ class Milito extends Table {
         Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
         The action method of state X is called everytime the current game state is set to X.
     */
-    
+
     /*
     
     Example for game state "MyGameState":
@@ -280,36 +250,73 @@ class Milito extends Table {
         (ex: pass).
     */
 
-    function zombieTurn( $state, $active_player )
+    protected function setupNewGame($players, $options = array())
     {
-        $statename = $state['name'];
-        
-        if ($state['type'] == "activeplayer") {
-            switch ($statename) {
-                default:
-                    $this->gamestate->nextState( "zombiePass" );
-                    break;
+        // Set the colors of the players with HTML color code
+        // The default below is red/green/blue/orange/brown
+        // The number of colors defined here must correspond to the maximum number of players allowed for the gams
+        $default_colors = array("ff0000", "008000", "0000ff", "ffa500", "773300");
+
+        // Create players
+        // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
+        $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
+        $values = array();
+        foreach ($players as $player_id => $player) {
+            $color = array_shift($default_colors);
+            $values[] = "('" . $player_id . "','$color','" . $player['player_canal'] . "','" . addslashes($player['player_name']) . "','" . addslashes($player['player_avatar']) . "')";
+        }
+        $sql .= implode($values, ',');
+        self::DbQuery($sql);
+        self::reattributeColorsBasedOnPreferences($players, array("ff0000", "008000", "0000ff", "ffa500", "773300"));
+        self::reloadPlayersBasicInfos();
+
+        /************ Start the game initialization *****/
+
+        // Init global values with their initial values
+
+        // Note: hand types: 0 = give 3 cards to player on the left
+        //                   1 = give 3 cards to player on the right
+        //                   2 = give 3 cards to player on tthe front
+        //                   3 = keep cards
+        self::setGameStateInitialValue('currentHandType', 0);
+
+        // Set current trick color to zero (= no trick color)
+        self::setGameStateInitialValue('trickColor', 0);
+
+        // Mark if we already played some heart during this hand
+        self::setGameStateInitialValue('alreadyPlayedHearts', 0);
+
+        // Init game statistics
+        // (note: statistics are defined in your stats.inc.php file)
+
+        // Create cards
+        $cards = array();
+        foreach ($this->colors as $color_id => $color) {
+            // spade, heart, diamond, club
+            for ($value = 2; $value <= 14; $value++) {
+                //  2, 3, 4, ... K, A
+                $cards [] = array('type' => $color_id, 'type_arg' => $value, 'nbr' => 1);
             }
-
-            return;
         }
 
-        if ($state['type'] == "multipleactiveplayer") {
-            // Make sure player is in a non blocking status for role turn
-            $sql = "
-                UPDATE  player
-                SET     player_is_multiactive = 0
-                WHERE   player_id = $active_player
-            ";
-            self::DbQuery( $sql );
+        $this->cards->createCards($cards, 'deck');
 
-            $this->gamestate->updateMultiactiveOrNextState( '' );
-            return;
+
+        // Shuffle deck
+        $this->cards->shuffle('deck');
+        // Deal 13 cards to each players
+        $players = self::loadPlayersBasicInfos();
+        foreach ($players as $player_id => $player) {
+            $cards = $this->cards->pickCards(13, 'deck', $player_id);
         }
 
-        throw new feException( "Zombie mode not supported at this game state: ".$statename );
+        // Activate first player (which is in general a good idea :) )
+        $this->activeNextPlayer();
+
+
+        /************ End of the game initialization *****/
     }
-    
+
 ///////////////////////////////////////////////////////////////////////////////////:
 ////////// DB upgrade
 //////////
@@ -324,28 +331,24 @@ class Milito extends Table {
         update the game database and allow the game to continue to run with your new version.
     
     */
-    
-    function upgradeTableDb( $from_version )
+
+    protected function getAllDatas()
     {
-        // $from_version is the current version of this game database, in numerical form.
-        // For example, if the game was running with a release of your game named "140430-1345",
-        // $from_version is equal to 1404301345
-        
-        // Example:
-//        if( $from_version <= 1404301345 )
-//        {
-//            $sql = "ALTER TABLE xxxxxxx ....";
-//            self::DbQuery( $sql );
-//        }
-//        if( $from_version <= 1405061421 )
-//        {
-//            $sql = "CREATE TABLE xxxxxxx ....";
-//            self::DbQuery( $sql );
-//        }
-//        // Please add your future database scheme changes here
-//
-//
+        $result = array('players' => array());
 
+        $current_player_id = self::getCurrentPlayerId();    // !! We must only return informations visible by this player !!
 
-    }    
+        // Get information about players
+        // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
+        $sql = "SELECT player_id id, player_score score FROM player ";
+        $result['players'] = self::getCollectionFromDb($sql);
+
+        // Cards in player hand
+        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
+
+        // Cards played on the table
+        $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
+
+        return $result;
+    }
 }

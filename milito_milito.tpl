@@ -48,11 +48,11 @@
 
 <script type="text/javascript">
 
-// Javascript HTML templates
+    // Javascript HTML templates
 
-var jstpl_cardontable = '<div class="cardontable" id="cardontable_${player_id}" style="background-position:-${x}px -${y}px">\
+    var jstpl_cardontable = '<div class="cardontable" id="cardontable_${player_id}" style="background-position:-${x}px -${y}px">\
                         </div>';
 
-</script>  
+</script>
 
 {OVERALL_GAME_FOOTER}
