@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * Milito implementation : © <Your name here> <Your email address here>
+ * Milito implementation : © <Oleg Baskakov> <spetz911@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -18,7 +18,7 @@
     
     Styles defined on this file will be applied to the HTML elements you define in your
     HTML template (milito_milito.tpl), and to HTML elements you create dynamically
-    (in milito.js).
+    (in template.js).
     
     Usually, you are using CSS to:
     
@@ -42,49 +42,9 @@
            Consequently, don't hesitate to put as many comments as necessary.
 */
 
-
-/* Note: you must not use any @import directive */
-
+@import url(../../../css/csslayer.css); /* Note: you must not use any @import directive other than this one */
 
 /********* You can start writing your CSS below this line: **********/
-
-
-/*
-    Example of CSS sprites (a black token and a white token, 20x20px each, embedded in the same "tokens.png" 40x20px image):
-
-    .white_token {
-        background-image: url('img/tokens.png');
-        background-position: 0px 0px;
-    }
-    .black_token {
-        background-image: url('img/tokens.png');
-        background-position: -20px 0px;
-    }
-    .token {
-        width: 20px;
-        height: 20px;
-        background-repeat: none;
-    }
-*/
-
-.playertablecard {
-    display: inline-block;
-    position: relative;
-    margin-top: 5px;
-    width: 72px;
-    height: 96px;
-    /* we remove background-image here */
-}
-
-/*** cards on table ***/
-
-.cardontable {
-    position: absolute;
-    width: 72px;
-    height: 96px;
-    background-image: url('img/cards.jpg'); 
-}
-
 /** Table layout **/
 
 #playertables {
@@ -124,3 +84,21 @@
     top: 50%;
     margin-top: -55px; /* half of 130 */
 }
+
+.playertablecard {
+    display: inline-block;
+    position: relative;
+    margin-top: 5px;
+    width: 72px;
+    height: 96px;
+}
+
+/*** cards on table ***/
+
+.cardontable {
+    position: absolute;
+    width: 72px;
+    height: 96px;
+    background-image: url('img/cards.jpg'); 
+}
+

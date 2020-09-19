@@ -2,13 +2,13 @@
  /**
   *------
   * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
-  * template implementation : © <Your name here> <Your email address here>
+  * Milito implementation : © <Your name here> <Your email address here>
   * 
   * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
   * See http://en.boardgamearena.com/#!doc/Studio for more information.
   * -----
   * 
-  * heartsla.game.php
+  * milito.game.php
   *
   * This is the main file for your game logic.
   *
@@ -20,7 +20,7 @@
 require_once( APP_GAMEMODULE_PATH.'module/table/table.game.php' );
 
 
-class Heartsla extends Table {
+class Milito extends Table {
 
     function __construct() {
             
@@ -48,7 +48,7 @@ class Heartsla extends Table {
     protected function getGameName( )
     {
         // Used for translations and stuff. Please do not modify.
-        return "heartsla";
+        return "milito";
     }   
 
     /*
